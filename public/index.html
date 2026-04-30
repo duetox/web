@@ -8,21 +8,23 @@
 </head>
 <body>
   <main class="container">
-    <h1>Advanced WA Controller</h1>
-    <section class="card">
+    <h1>WhatsApp Control</h1>
+
+    <section class="card" id="connectCard">
+      <h2>Connect Device</h2>
       <button id="startSession">Start Session</button>
-      <input id="sessionId" placeholder="Session ID" />
-      <input id="phoneNumber" placeholder="Pair phone number (countrycode+number)" />
+      <input id="sessionId" placeholder="Session ID (optional)" />
+      <input id="phoneNumber" placeholder="Pair phone number (e.g. 919876543210)" />
       <button id="pairCode">Get Pairing Code</button>
       <p id="status">Idle</p>
       <img id="qr" alt="QR" />
       <p id="pair"></p>
     </section>
 
-    <section class="card">
-      <h2>Send message by JID</h2>
-      <input id="jid" placeholder="target jid or number" />
-      <textarea id="payload" rows="6" placeholder="Message or JS snippet text to send"></textarea>
+    <section class="card hidden" id="chatCard">
+      <h2>Chat</h2>
+      <input id="target" placeholder="Number or JID (e.g. 919876543210 or 919876543210@s.whatsapp.net)" />
+      <textarea id="payload" rows="5" placeholder="Type message"></textarea>
       <button id="send">Send</button>
     </section>
 
