@@ -3,7 +3,14 @@
   "description": "Heroku-ready advanced Baileys WhatsApp control panel.",
   "repository": "https://example.com/replace-with-your-repo",
   "logo": "https://node-js-sample.herokuapp.com/node.svg",
-  "keywords": ["node", "express", "baileys", "whatsapp", "postgres", "socket.io"],
+  "keywords": [
+    "node",
+    "express",
+    "baileys",
+    "whatsapp",
+    "postgres",
+    "socket.io"
+  ],
   "success_url": "/",
   "env": {
     "APP_NAME": {
@@ -11,7 +18,9 @@
       "value": "Advanced WA Controller"
     }
   },
-  "addons": ["heroku-postgresql:mini"],
+  "addons": [
+    "heroku-postgresql"
+  ],
   "formation": {
     "web": {
       "quantity": 1,
