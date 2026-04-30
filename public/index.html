@@ -1,0 +1,37 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Advanced WA Controller</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>Advanced WA Controller</h1>
+    <section class="card">
+      <button id="startSession">Start Session</button>
+      <input id="sessionId" placeholder="Session ID" />
+      <input id="phoneNumber" placeholder="Pair phone number (countrycode+number)" />
+      <button id="pairCode">Get Pairing Code</button>
+      <p id="status">Idle</p>
+      <img id="qr" alt="QR" />
+      <p id="pair"></p>
+    </section>
+
+    <section class="card">
+      <h2>Send message by JID</h2>
+      <input id="jid" placeholder="target jid or number" />
+      <textarea id="payload" rows="6" placeholder="Message or JS snippet text to send"></textarea>
+      <button id="send">Send</button>
+    </section>
+
+    <section class="card">
+      <h2>Recent messages</h2>
+      <pre id="logs"></pre>
+    </section>
+  </main>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
