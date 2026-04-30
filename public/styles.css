@@ -1,0 +1,7 @@
+body { font-family: Inter, system-ui, sans-serif; background: radial-gradient(circle at top,#1f2937,#020617); color:#e2e8f0; margin:0; }
+.container{ max-width:960px; margin:40px auto; display:grid; gap:16px; padding:16px; }
+.card{ background:rgba(15,23,42,.8); border:1px solid #334155; border-radius:16px; padding:16px; backdrop-filter: blur(8px); }
+input,textarea,button{ width:100%; margin-top:8px; padding:10px; border-radius:10px; border:1px solid #475569; background:#0f172a; color:#e2e8f0; }
+button{ background:linear-gradient(90deg,#22c55e,#14b8a6); color:#052e16; font-weight:700; cursor:pointer; }
+#qr{ max-width:320px; margin-top:12px; border-radius:8px; }
+pre{ white-space:pre-wrap; max-height:250px; overflow:auto; }
