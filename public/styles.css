@@ -1,7 +1,12 @@
-body { font-family: Inter, system-ui, sans-serif; background: radial-gradient(circle at top,#1f2937,#020617); color:#e2e8f0; margin:0; }
-.container{ max-width:960px; margin:40px auto; display:grid; gap:16px; padding:16px; }
-.card{ background:rgba(15,23,42,.8); border:1px solid #334155; border-radius:16px; padding:16px; backdrop-filter: blur(8px); }
-input,textarea,button{ width:100%; margin-top:8px; padding:10px; border-radius:10px; border:1px solid #475569; background:#0f172a; color:#e2e8f0; }
-button{ background:linear-gradient(90deg,#22c55e,#14b8a6); color:#052e16; font-weight:700; cursor:pointer; }
-#qr{ max-width:320px; margin-top:12px; border-radius:8px; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, sans-serif; background:#f2f2f7; color:#111827; margin:0; }
+.container{ max-width:840px; margin:28px auto; display:grid; gap:14px; padding:14px; }
+.card{ background:#fff; border:1px solid #e5e7eb; border-radius:22px; padding:18px; box-shadow:0 8px 24px rgba(15,23,42,.08); }
+h1{ margin:6px 2px 2px; font-size:30px; }
+h2{ margin:0; font-size:20px; }
+input,textarea,button{ width:100%; margin-top:10px; padding:12px; border-radius:14px; border:1px solid #d1d5db; background:#fff; color:#111827; box-sizing:border-box; }
+textarea{ resize:vertical; }
+button{ background:#007aff; border:none; color:#fff; font-weight:700; cursor:pointer; }
+button:hover{ background:#0a84ff; }
+#qr{ max-width:280px; margin-top:12px; border-radius:12px; border:1px solid #e5e7eb; }
 pre{ white-space:pre-wrap; max-height:250px; overflow:auto; }
+.hidden{ display:none; }

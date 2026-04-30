@@ -39,9 +39,10 @@ app.post('/api/session/pair-code', async (req, res) => {
 
 app.post('/api/message/send', async (req, res) => {
   try {
-    const { sessionId, jid, payload } = req.body
-    if (!sessionId || !jid || !payload) return res.status(400).json({ ok: false, error: 'sessionId, jid, payload are required' })
-    const result = await sendTextToJid({ sessionId, jid, payload })
+    const { sessionId, jid, target, payload } = req.body
+    const recipient = target || jid
+    if (!sessionId || !recipient || !payload) return res.status(400).json({ ok: false, error: 'sessionId, target/ jid, payload are required' })
+    const result = await sendTextToJid({ sessionId, jid: recipient, payload })
     res.json({ ok: true, result })
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message })

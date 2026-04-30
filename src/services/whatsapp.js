@@ -9,6 +9,33 @@ import { saveMessageLog, upsertSession } from './store.js'
 
 const sessions = new Map()
 
+function sanitizePhoneNumber(phoneNumber) {
+  return String(phoneNumber || '').replace(/\D/g, '')
+}
+
+async function waitForSocketReady(sock, timeoutMs = 20000) {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      cleanup()
+      reject(new Error('Socket not ready for pairing yet. Please retry in a few seconds.'))
+    }, timeoutMs)
+
+    const onUpdate = ({ connection, qr }) => {
+      if (connection === 'connecting' || !!qr || connection === 'open') {
+        cleanup()
+        resolve(true)
+      }
+    }
+
+    const cleanup = () => {
+      clearTimeout(timeout)
+      sock.ev.off('connection.update', onUpdate)
+    }
+
+    sock.ev.on('connection.update', onUpdate)
+  })
+}
+
 function getSessionDir(sessionId) {
   const dir = path.join(process.cwd(), 'sessions', sessionId)
   fs.mkdirSync(dir, { recursive: true })
@@ -69,8 +96,13 @@ export async function createOrGetSession(sessionId, io) {
 }
 
 export async function pairWithCode(sessionId, phoneNumber, io) {
+  if (!sessionId) throw new Error('Please start a session first before requesting pairing code.')
   const session = await createOrGetSession(sessionId, io)
-  const code = await session.sock.requestPairingCode(phoneNumber)
+  const sanitizedPhone = sanitizePhoneNumber(phoneNumber)
+  if (!sanitizedPhone) throw new Error('Invalid phone number. Use digits only in E.164 format without + sign.')
+
+  await waitForSocketReady(session.sock)
+  const code = await session.sock.requestPairingCode(sanitizedPhone)
   io.emit('wa:update', { sessionId, status: 'pair-code', pairCode: code })
   return code
 }
