@@ -15,6 +15,10 @@ $('startSession').onclick = async () => {
 }
 
 $('pairCode').onclick = async () => {
+  if (!state.sessionId) {
+    $('pair').textContent = 'Pehle session start karo, phir pairing code lo.'
+    return
+  }
   const phoneNumber = $('phoneNumber').value.trim()
   const res = await fetch('/api/session/pair-code', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ sessionId: state.sessionId, phoneNumber }) })
   const data = await res.json()
