@@ -37,4 +37,16 @@ export async function initDb() {
       status TEXT NOT NULL
     );
   `)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS command_rules (
+      id UUID PRIMARY KEY,
+      session_key TEXT NOT NULL,
+      command TEXT NOT NULL,
+      response_type TEXT NOT NULL DEFAULT 'text',
+      response_payload TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(session_key, command)
+    );
+  `)
 }

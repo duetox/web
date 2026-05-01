@@ -18,7 +18,16 @@
       <p id='creds'></p><input id='phoneNumber' placeholder='Phone Number for pairing code'/><button id='pairCode'>Get Pairing Code</button><p id='pair'></p><img id='qr'/>
     </section>
     <section class='card hidden' id='chatView'>
-      <h2 id='status'>Connected</h2><input id='jid' placeholder='JID or number'/><textarea id='message' placeholder='Type message'></textarea><button id='send'>Send</button>
+      <h2 id='status'>Connected</h2>
+      <input id='jid' placeholder='JID or number'/>
+      <select id='payloadType'><option value='text'>Text</option><option value='image'>Image URL</option><option value='video'>Video URL</option><option value='document'>Document URL</option></select>
+      <textarea id='message' placeholder='Type text or caption'></textarea>
+      <input id='mediaUrl' placeholder='https://... (required for media)'/>
+      <button id='send'>Send</button>
+      <h3>Add Commands</h3>
+      <input id='commandName' placeholder='.intro'/><select id='commandType'><option value='text'>Text reply</option><option value='image'>Image reply</option></select>
+      <textarea id='commandBody' placeholder='Reply text'></textarea><input id='commandMediaUrl' placeholder='Image URL (for image reply)'/>
+      <button id='saveCommand'>Save Command</button><pre id='commandsList'></pre>
       <h3>Events</h3><pre id='events'></pre>
     </section>
   </main>
