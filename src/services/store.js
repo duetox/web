@@ -49,3 +49,31 @@ export async function listRecentMessages(limit = 60) {
   )
   return rows
 }
+
+export async function upsertCommandRule({ sessionKey, command, responseType = 'text', responsePayload }) {
+  const normalized = command.trim().toLowerCase()
+  await pool.query(
+    `INSERT INTO command_rules (id, session_key, command, response_type, response_payload)
+     VALUES ($1,$2,$3,$4,$5)
+     ON CONFLICT (session_key, command)
+     DO UPDATE SET response_type=EXCLUDED.response_type, response_payload=EXCLUDED.response_payload`,
+    [randomUUID(), sessionKey, normalized, responseType, responsePayload]
+  )
+}
+
+export async function listCommandRules(sessionKey) {
+  const { rows } = await pool.query(
+    'SELECT command, response_type, response_payload, created_at FROM command_rules WHERE session_key=$1 ORDER BY created_at DESC',
+    [sessionKey]
+  )
+  return rows
+}
+
+export async function getCommandRule(sessionKey, command) {
+  const normalized = command.trim().toLowerCase()
+  const { rows } = await pool.query(
+    'SELECT command, response_type, response_payload FROM command_rules WHERE session_key=$1 AND command=$2 LIMIT 1',
+    [sessionKey, normalized]
+  )
+  return rows[0] || null
+}

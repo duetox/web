@@ -5,9 +5,10 @@ import QRCode from 'qrcode'
 import fs from 'fs'
 import path from 'path'
 import { normalizeJid } from '../utils/jid.js'
-import { saveMessageLog, updateAccountConnection } from './store.js'
+import { getCommandRule, saveMessageLog, updateAccountConnection } from './store.js'
 
 const sessions = new Map()
+const pendingCredentials = new Map()
 
 function sanitizePhoneNumber(phoneNumber) { return String(phoneNumber || '').replace(/\D/g, '') }
 function getSessionDir(sessionKey) { const dir = path.join(process.cwd(), 'sessions', sessionKey); fs.mkdirSync(dir, { recursive: true }); return dir }
@@ -26,6 +27,16 @@ export async function createOrGetSession(sessionKey, io) {
       const txt = msg.message?.conversation || msg.message?.extendedTextMessage?.text || '[media]'
       await saveMessageLog({ sessionKey, targetJid: msg.key.remoteJid || 'unknown', payload: txt, status: 'received' })
       io.emit('chat:event', { sessionKey, jid: msg.key.remoteJid, payload: txt, ts: msg.messageTimestamp })
+
+      if (!msg.key.fromMe && txt && txt.startsWith('.')) {
+        const rule = await getCommandRule(sessionKey, txt.split(' ')[0])
+        if (rule) {
+          const targetJid = msg.key.remoteJid
+          const payload = JSON.parse(rule.response_payload)
+          if (rule.response_type === 'text') await sock.sendMessage(targetJid, { text: payload.text || '' })
+          if (rule.response_type === 'image') await sock.sendMessage(targetJid, { image: { url: payload.url }, caption: payload.caption || '' })
+        }
+      }
     }
   })
 
@@ -34,6 +45,13 @@ export async function createOrGetSession(sessionKey, io) {
     if (connection === 'open') {
       session.status = 'connected'; session.user = sock.user
       await updateAccountConnection(sessionKey, { waJid: sock.user?.id || null, displayName: sock.user?.name || null })
+      const creds = pendingCredentials.get(sessionKey)
+      if (creds && sock.user?.id) {
+        await sock.sendMessage(sock.user.id, {
+          text: `Your panel credentials\nUsername: ${creds.username}\nPassword: ${creds.password}`
+        })
+        pendingCredentials.delete(sessionKey)
+      }
       io.emit('wa:update', { sessionKey, status: 'connected', user: sock.user })
     }
     if (connection === 'close') {
@@ -43,6 +61,10 @@ export async function createOrGetSession(sessionKey, io) {
     }
   })
   return session
+}
+
+export function registerPendingCredential(sessionKey, creds) {
+  pendingCredentials.set(sessionKey, creds)
 }
 
 export async function pairWithCode(sessionKey, phoneNumber, io) {
@@ -61,7 +83,10 @@ export async function sendPayload({ sessionKey, jid, payload }) {
   let content
   if (payload.type === 'text') content = { text: payload.text }
   else if (payload.type === 'reaction') content = { react: { text: payload.emoji || '👍', key: payload.key } }
-  else throw new Error('Unsupported payload type in this starter: text/reaction')
+  else if (payload.type === 'image') content = { image: { url: payload.url }, caption: payload.caption || '' }
+  else if (payload.type === 'video') content = { video: { url: payload.url }, caption: payload.caption || '' }
+  else if (payload.type === 'document') content = { document: { url: payload.url }, fileName: payload.fileName || 'file' }
+  else throw new Error('Unsupported payload type in this starter: text/reaction/image/video/document')
 
   await session.sock.sendMessage(targetJid, content)
   await saveMessageLog({ sessionKey, targetJid, payload: JSON.stringify(payload), mediaType: payload.type, status: 'sent' })
