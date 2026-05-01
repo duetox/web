@@ -1,39 +1,27 @@
-<!doctype html>
-<html>
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Advanced WA Controller</title>
-  <link rel="stylesheet" href="styles.css" />
-</head>
+<!doctype html><html><head><meta charset='UTF-8'/><meta name='viewport' content='width=device-width,initial-scale=1'/><title>WA Web Clone</title><link rel='stylesheet' href='styles.css'/></head>
 <body>
-  <main class="container">
-    <h1>WhatsApp Control</h1>
-
-    <section class="card" id="connectCard">
-      <h2>Connect Device</h2>
-      <button id="startSession">Start Session</button>
-      <input id="sessionId" placeholder="Session ID (optional)" />
-      <input id="phoneNumber" placeholder="Pair phone number (e.g. 919876543210)" />
-      <button id="pairCode">Get Pairing Code</button>
-      <p id="status">Idle</p>
-      <img id="qr" alt="QR" />
-      <p id="pair"></p>
+<div class='layout'>
+  <aside class='sidebar'>
+    <h1>WhatsApp Web Clone</h1>
+    <button id='newAccount'>Add New Account</button>
+    <button id='logout'>Logout</button>
+    <input id='search' placeholder='Search chats'/>
+    <pre id='accounts'></pre>
+  </aside>
+  <main class='main'>
+    <section class='card' id='loginView'>
+      <h2>Login</h2><input id='username' placeholder='Username'/><input id='password' type='password' placeholder='Password'/><button id='login'>Login</button>
+      <p class='hint'>First time? click Add New Account.</p>
     </section>
-
-    <section class="card hidden" id="chatCard">
-      <h2>Chat</h2>
-      <input id="target" placeholder="Number or JID (e.g. 919876543210 or 919876543210@s.whatsapp.net)" />
-      <textarea id="payload" rows="5" placeholder="Type message"></textarea>
-      <button id="send">Send</button>
+    <section class='card hidden' id='onboardingView'>
+      <h2>First-time WhatsApp Link</h2>
+      <p id='creds'></p><input id='phoneNumber' placeholder='Phone Number for pairing code'/><button id='pairCode'>Get Pairing Code</button><p id='pair'></p><img id='qr'/>
     </section>
-
-    <section class="card">
-      <h2>Recent messages</h2>
-      <pre id="logs"></pre>
+    <section class='card hidden' id='chatView'>
+      <h2 id='status'>Connected</h2><input id='jid' placeholder='JID or number'/><textarea id='message' placeholder='Type message'></textarea><button id='send'>Send</button>
+      <h3>Events</h3><pre id='events'></pre>
     </section>
   </main>
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="app.js"></script>
-</body>
-</html>
+</div>
+<script src='/socket.io/socket.io.js'></script><script src='app.js'></script>
+</body></html>

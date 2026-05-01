@@ -2,7 +2,7 @@ import pg from 'pg'
 
 const { Pool } = pg
 
-const connectionString = process.env.DATABASE_URL
+const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/postgres'
 
 export const pool = new Pool({
   connectionString,
@@ -13,11 +13,13 @@ export const pool = new Pool({
 
 export async function initDb() {
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS sessions (
+    CREATE TABLE IF NOT EXISTS wa_accounts (
       id UUID PRIMARY KEY,
-      phone_number TEXT,
-      status TEXT NOT NULL DEFAULT 'disconnected',
-      paired_jid TEXT,
+      username TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      wa_jid TEXT,
+      display_name TEXT,
+      session_key TEXT UNIQUE NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
@@ -26,9 +28,11 @@ export async function initDb() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS messages (
       id UUID PRIMARY KEY,
-      session_id UUID NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+      account_id UUID REFERENCES wa_accounts(id) ON DELETE SET NULL,
+      session_key TEXT NOT NULL,
       target_jid TEXT NOT NULL,
       payload TEXT NOT NULL,
+      media_type TEXT NOT NULL DEFAULT 'text',
       sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       status TEXT NOT NULL
     );
