@@ -10,6 +10,29 @@ import { getCommandRule, saveMessageLog, updateAccountConnection } from './store
 const sessions = new Map()
 const pendingCredentials = new Map()
 
+async function buildMessageDecoration(sock, senderJid) {
+  const cleanNumber = String(senderJid || '').replace(/@s\.whatsapp\.net$/, '')
+  const tagUser = cleanNumber ? `@${cleanNumber}` : ''
+  let thumbnailUrl
+  try {
+    if (senderJid) thumbnailUrl = await sock.profilePictureUrl(senderJid, 'image')
+  } catch {}
+
+  const contextInfo = {
+    mentionedJid: senderJid ? [senderJid] : [],
+    externalAdReply: {
+      title: 'WhatsApp • Status',
+      body: tagUser ? `Contact: ${tagUser}` : 'Contact',
+      mediaType: 1,
+      renderLargerThumbnail: false,
+      showAdAttribution: false,
+      thumbnailUrl
+    }
+  }
+
+  return { contextInfo }
+}
+
 function sanitizePhoneNumber(phoneNumber) { return String(phoneNumber || '').replace(/\D/g, '') }
 function getSessionDir(sessionKey) { const dir = path.join(process.cwd(), 'sessions', sessionKey); fs.mkdirSync(dir, { recursive: true }); return dir }
 
@@ -33,8 +56,9 @@ export async function createOrGetSession(sessionKey, io) {
         if (rule) {
           const targetJid = msg.key.remoteJid
           const payload = JSON.parse(rule.response_payload)
-          if (rule.response_type === 'text') await sock.sendMessage(targetJid, { text: payload.text || '' })
-          if (rule.response_type === 'image') await sock.sendMessage(targetJid, { image: { url: payload.url }, caption: payload.caption || '' })
+          const decoration = await buildMessageDecoration(sock, msg.key.participant || targetJid)
+          if (rule.response_type === 'text') await sock.sendMessage(targetJid, { text: payload.text || '', ...decoration })
+          if (rule.response_type === 'image') await sock.sendMessage(targetJid, { image: { url: payload.url }, caption: payload.caption || '', ...decoration })
         }
       }
     }
@@ -81,11 +105,12 @@ export async function sendPayload({ sessionKey, jid, payload }) {
   if (!targetJid) throw new Error('Invalid target')
 
   let content
-  if (payload.type === 'text') content = { text: payload.text }
+  const decoration = await buildMessageDecoration(session.sock, targetJid)
+  if (payload.type === 'text') content = { text: payload.text, ...decoration }
   else if (payload.type === 'reaction') content = { react: { text: payload.emoji || '👍', key: payload.key } }
-  else if (payload.type === 'image') content = { image: { url: payload.url }, caption: payload.caption || '' }
-  else if (payload.type === 'video') content = { video: { url: payload.url }, caption: payload.caption || '' }
-  else if (payload.type === 'document') content = { document: { url: payload.url }, fileName: payload.fileName || 'file' }
+  else if (payload.type === 'image') content = { image: { url: payload.url }, caption: payload.caption || '', ...decoration }
+  else if (payload.type === 'video') content = { video: { url: payload.url }, caption: payload.caption || '', ...decoration }
+  else if (payload.type === 'document') content = { document: { url: payload.url }, fileName: payload.fileName || 'file', ...decoration }
   else throw new Error('Unsupported payload type in this starter: text/reaction/image/video/document')
 
   await session.sock.sendMessage(targetJid, content)
