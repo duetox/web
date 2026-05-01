@@ -4,6 +4,7 @@ import { Boom } from '@hapi/boom'
 import QRCode from 'qrcode'
 import fs from 'fs'
 import path from 'path'
+import { get } from 'https'
 import { normalizeJid } from '../utils/jid.js'
 import { getCommandRule, saveMessageLog, updateAccountConnection } from './store.js'
 
@@ -12,6 +13,38 @@ const pendingCredentials = new Map()
 
 function sanitizePhoneNumber(phoneNumber) { return String(phoneNumber || '').replace(/\D/g, '') }
 function getSessionDir(sessionKey) { const dir = path.join(process.cwd(), 'sessions', sessionKey); fs.mkdirSync(dir, { recursive: true }); return dir }
+
+async function fetchBufferFromUrl(url) {
+  return new Promise((resolve, reject) => {
+    const chunks = []
+    get(url, (res) => {
+      res.on('data', (d) => chunks.push(d))
+      res.on('end', () => resolve(Buffer.concat(chunks)))
+      res.on('error', reject)
+    }).on('error', reject)
+  })
+}
+
+async function buildQuotedContact(sock, senderJid) {
+  let thumbnail
+  try {
+    const pfpUrl = await sock.profilePictureUrl(senderJid, 'image')
+    thumbnail = await fetchBufferFromUrl(pfpUrl)
+  } catch {
+    thumbnail = undefined
+  }
+  const number = (senderJid || '').split('@')[0]
+  return {
+    key: { fromMe: false, participant: '0@s.whatsapp.net', remoteJid: 'status@broadcast' },
+    message: {
+      contactMessage: {
+        displayName: `@${number}`,
+        vcard: `BEGIN:VCARD\nVERSION:3.0\nN:XL;${number},;;;\nFN:@${number}\nitem1.TEL;waid=${number}:${number}\nitem1.X-ABLabel:Contact\nEND:VCARD`,
+        jpegThumbnail: thumbnail
+      }
+    }
+  }
+}
 
 export async function createOrGetSession(sessionKey, io) {
   if (sessions.has(sessionKey)) return sessions.get(sessionKey)
@@ -33,8 +66,9 @@ export async function createOrGetSession(sessionKey, io) {
         if (rule) {
           const targetJid = msg.key.remoteJid
           const payload = JSON.parse(rule.response_payload)
-          if (rule.response_type === 'text') await sock.sendMessage(targetJid, { text: payload.text || '' })
-          if (rule.response_type === 'image') await sock.sendMessage(targetJid, { image: { url: payload.url }, caption: payload.caption || '' })
+          const quoted = await buildQuotedContact(sock, msg.key.participant || msg.key.remoteJid)
+          if (rule.response_type === 'text') await sock.sendMessage(targetJid, { text: payload.text || '' }, { quoted, mentions: [msg.key.participant || msg.key.remoteJid] })
+          if (rule.response_type === 'image') await sock.sendMessage(targetJid, { image: { url: payload.url }, caption: payload.caption || '' }, { quoted, mentions: [msg.key.participant || msg.key.remoteJid] })
         }
       }
     }
@@ -88,7 +122,9 @@ export async function sendPayload({ sessionKey, jid, payload }) {
   else if (payload.type === 'document') content = { document: { url: payload.url }, fileName: payload.fileName || 'file' }
   else throw new Error('Unsupported payload type in this starter: text/reaction/image/video/document')
 
-  await session.sock.sendMessage(targetJid, content)
+  const mentionJid = session.sock.user?.id || targetJid
+  const quoted = await buildQuotedContact(session.sock, mentionJid)
+  await session.sock.sendMessage(targetJid, content, { quoted, mentions: [mentionJid] })
   await saveMessageLog({ sessionKey, targetJid, payload: JSON.stringify(payload), mediaType: payload.type, status: 'sent' })
   return { targetJid }
 }
