@@ -1,58 +1,43 @@
-const socket = io()
-const $ = (id) => document.getElementById(id)
+const socket = io(); const $ = (id) => document.getElementById(id)
+const state = { token:'', sessionKey:'', messages:[] }
+const show = (id, on=true) => $(id).classList.toggle('hidden', !on)
 
-const state = { sessionId: '' }
+async function bootstrap() { const data = await (await fetch('/api/bootstrap')).json(); $('accounts').textContent = JSON.stringify(data.accounts,null,2) }
+bootstrap()
 
-function setConnectedUI(isConnected) {
-  $('connectCard').classList.toggle('hidden', isConnected)
-  $('chatCard').classList.toggle('hidden', !isConnected)
+$('newAccount').onclick = async () => {
+  const data = await (await fetch('/api/auth/first-time',{method:'POST'})).json()
+  state.sessionKey = data.sessionKey
+  $('creds').textContent = `Save credentials now. Username: ${data.username} | Password: ${data.password}`
+  show('onboardingView', true); show('loginView', false); show('chatView', false)
 }
 
-$('startSession').onclick = async () => {
-  const sessionId = $('sessionId').value.trim() || undefined
-  const res = await fetch('/api/session/start', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ sessionId }) })
-  const data = await res.json()
-  if (data.ok) {
-    state.sessionId = data.sessionId
-    $('sessionId').value = data.sessionId
-    $('status').textContent = `Session: ${data.sessionId}`
-    setConnectedUI(false)
-  }
-}
-
-$('pairCode').onclick = async () => {
-  if (!state.sessionId) {
-    $('pair').textContent = 'Pehle session start karo, phir pairing code lo.'
-    return
-  }
+$('pairCode').onclick = async ()=>{
   const phoneNumber = $('phoneNumber').value.trim()
-  const res = await fetch('/api/session/pair-code', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ sessionId: state.sessionId, phoneNumber }) })
-  const data = await res.json()
-  $('pair').textContent = data.ok ? `Pairing code: ${data.code}` : data.error
+  const data = await (await fetch('/api/session/pair-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionKey:state.sessionKey, phoneNumber})})).json()
+  $('pair').textContent = data.ok ? `Pair code: ${data.code}` : data.error
 }
 
-$('send').onclick = async () => {
-  const target = $('target').value.trim()
-  const payload = $('payload').value
-  const res = await fetch('/api/message/send', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ sessionId: state.sessionId, target, payload }) })
-  const data = await res.json()
-  alert(data.ok ? `Sent to ${data.result.targetJid}` : data.error)
-  loadLogs()
+$('login').onclick = async ()=>{
+  const payload = {username:$('username').value.trim(), password:$('password').value}
+  const data = await (await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})).json()
+  if(!data.ok) return alert(data.error)
+  state.token = data.token; state.sessionKey = data.sessionKey
+  show('chatView', true); show('loginView', false); show('onboardingView', false)
+  $('status').textContent = `Connected as ${data.profile.username}`
 }
 
-socket.on('wa:update', (event) => {
-  $('status').textContent = `Status: ${event.status}`
-  if (event.qr) $('qr').src = event.qr
-  if (event.pairCode) $('pair').textContent = `Pairing code: ${event.pairCode}`
-  if (event.status === 'connected') setConnectedUI(true)
-  if (event.status === 'disconnected') setConnectedUI(false)
+$('logout').onclick = async ()=>{ if(!state.token) return; await fetch('/api/auth/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:state.token})}); state.token=''; show('loginView',true); show('chatView',false)}
+
+$('send').onclick = async ()=>{
+  const jid = $('jid').value.trim(); const text = $('message').value
+  const data = await (await fetch('/api/message/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:state.token,jid,payload:{type:'text',text}})})).json()
+  if(!data.ok) alert(data.error)
+}
+
+socket.on('wa:update', (e)=>{
+  if(e.sessionKey !== state.sessionKey) return
+  if(e.qr) $('qr').src = e.qr
+  $('status').textContent = `Status: ${e.status}`
 })
-
-async function loadLogs() {
-  const res = await fetch('/api/messages/recent')
-  const data = await res.json()
-  $('logs').textContent = JSON.stringify(data.rows || [], null, 2)
-}
-
-loadLogs()
-setConnectedUI(false)
+socket.on('chat:event', (e)=>{ if(e.sessionKey===state.sessionKey){ state.messages.unshift(e); $('events').textContent = JSON.stringify(state.messages.slice(0,40),null,2) } })
